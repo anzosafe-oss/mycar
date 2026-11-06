@@ -63,3 +63,12 @@ input[type="date"]::-webkit-date-and-time-value{min-width:0;text-align:left}
 html,body,.app,dialog{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.app::-webkit-scrollbar,dialog::-webkit-scrollbar{display:none;width:0;height:0}
 }
+
+.event-type-options{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
+.event-type-option{position:relative;display:inline-flex;margin:0;cursor:pointer}
+.event-type-option input[type="radio"]{position:absolute;width:1px;height:1px;margin:0;opacity:0;clip-path:inset(50%);overflow:hidden}
+.event-type-option span{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 15px;border:1px solid #555;border-radius:25px;color:var(--muted);background:transparent}
+.event-type-option input:checked+span{color:var(--green);border-color:var(--green);background:color-mix(in srgb,var(--green) 12%,var(--panel))}
+.event-type-option input:focus-visible+span{outline:2px solid var(--green);outline-offset:4px}
+:root[data-theme="light"] .event-type-option span{border-color:#aeb6a6}
+:root[data-theme="light"] .event-type-option input:checked+span{border-color:var(--green)}
