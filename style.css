@@ -57,3 +57,9 @@ input[type="date"]::-webkit-date-and-time-value{min-width:0;text-align:left}
 :root[data-theme="light"] .documents .document-expired{border-color:#c33c32;background:#fff5f3}
 :root[data-theme="light"] .documents .document-expired svg{color:#ad2d25}
 :root[data-theme="light"] .documents .document-expired .document-status{color:#ad2d25;background:#f9dcd7}
+
+/* Hide scroll indicators only in an installed touch web app. */
+@media (display-mode:standalone) and (hover:none) and (pointer:coarse){
+html,body,.app,dialog{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.app::-webkit-scrollbar,dialog::-webkit-scrollbar{display:none;width:0;height:0}
+}
