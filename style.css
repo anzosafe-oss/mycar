@@ -24,3 +24,13 @@ header{border-bottom:0;padding-bottom:8px}footer{border-top:0;margin-top:10px;pa
 .fuel-options button[aria-pressed="true"]{color:var(--green);border-color:var(--green);background:color-mix(in srgb,var(--green) 12%,var(--panel))}
 .fuel-options button:disabled{opacity:.35;cursor:default}.fuel-summary{font-size:13px;margin:8px 0}.vehicle-actions{gap:10px;flex-wrap:wrap}.vehicle-actions button{flex:1;white-space:normal}
 :root[data-theme="light"] .fuel-options button,:root[data-theme="light"] .secondary-button{border-color:#aeb6a6}.field[hidden],#refuelFields[hidden],#eventTitleField[hidden]{display:none}
+
+/* Keep native iOS date controls inside their field and modal. */
+.field,.form-grid>*{min-width:0}
+input[type="date"]{display:block;box-sizing:border-box;min-width:0;max-width:100%;width:100%;min-inline-size:0;max-inline-size:100%;inline-size:100%;min-height:48px;-webkit-appearance:none;appearance:none}
+input[type="date"]::-webkit-date-and-time-value{min-width:0;text-align:left}
+#documentDialog{box-sizing:border-box;width:calc(100% - 32px);max-width:440px;min-width:0;padding:24px;max-height:calc(100dvh - 40px);overflow-y:auto}
+#documentDialog form,#documentDialog .field{min-width:0;width:100%;max-width:100%}
+#documentDialog .form-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+#documentDialog .form-actions button{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:11px 12px;white-space:normal}
+@media(max-width:700px){#documentDialog{padding:20px}#documentDialog input{font-size:16px}#documentDialog .form-actions button{font-size:16px}}
