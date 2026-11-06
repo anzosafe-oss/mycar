@@ -16,3 +16,6 @@ header{border-bottom:0;padding-bottom:8px}footer{border-top:0;margin-top:10px;pa
 #cancelDelete{border:1px solid #777;border-radius:24px;padding:10px 16px;background:transparent;color:inherit}
 :root[data-theme="light"] .danger-button{color:#a02d23;border-color:#b96b63}:root[data-theme="light"] .danger-button:hover{background:#f2dcd7}
 @media(max-width:700px){.vehicle-select h3{font-size:21px;overflow-wrap:anywhere}.vehicle-actions .danger-button{width:100%}.event-actions .danger-button{font-size:13px;padding:9px 12px}}
+
+.vehicle:not(.selected) .vehicle-select{color:var(--muted)}
+.vehicle:not(.selected) .vehicle-select h3,.vehicle:not(.selected) .vehicle-select p{color:var(--muted)}
