@@ -1,0 +1,19 @@
+(()=>{
+let ready=null;
+const ios=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const installed=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+const supported=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+async function call(body){const r=await sb.functions.invoke('mycar-push',{body});if(r.error){let detail;try{detail=await r.error.context?.json()}catch{}throw Error(detail?.error||r.error.message)}if(r.data?.error)throw Error(r.data.error);return r.data}
+const decode=key=>Uint8Array.from(atob(key.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-key.length%4)%4)),c=>c.charCodeAt(0));
+function prepare(){return ready||(ready=Promise.all([navigator.serviceWorker.register('sw.js?v=2',{scope:'./'}).then(()=>navigator.serviceWorker.ready),call({action:'config'})]).catch(e=>{ready=null;throw e}))}
+function badge(){if(!user||!supported())return;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Bucharest',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const count=notices?documents.filter(d=>d.expiry_date&&Math.round((Date.parse(d.expiry_date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000)<=Number(days)).length:0;if(count&&navigator.setAppBadge)navigator.setAppBadge(count).catch(()=>{});else if(!count&&navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{})}
+window.mycarNotificationsChanged=()=>{badge();if(user&&notices&&supported())navigator.serviceWorker.getRegistration('./').then(async reg=>{if(reg&&await reg.pushManager.getSubscription())await call({action:'check'})}).catch(()=>{})};
+window.initMyCarPush=async()=>{const enable=document.querySelector('#pushEnable'),disable=document.querySelector('#pushDisable'),status=document.querySelector('#pushStatus');if(!enable)return;const say=t=>{if(status.isConnected)status.textContent=t};if(ios()&&!installed()){say('Pe iPhone, deschide MyCar din iconița de pe ecranul principal pentru activare.');return}if(!supported()){say('Notificările push nu sunt disponibile în acest browser.');return}
+let reg,config;try{[reg,config]=await prepare()}catch(e){say(e.message);return}
+const refresh=async()=>{const sub=await reg.pushManager.getSubscription();enable.disabled=!!sub&&Notification.permission==='granted';disable.disabled=!sub;say(sub&&Notification.permission==='granted'?(notices?'Dispozitiv activ. Verificare pe server în fiecare oră, fără mesaje duplicate.':'Dispozitiv înregistrat. Bifează notificările pentru a primi avertizări.'):Notification.permission==='denied'?'Notificările sunt blocate în setările dispozitivului.':'Activează dispozitivul și permite notificările.');};
+await refresh();
+enable.onclick=async()=>{enable.disabled=true;try{const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(config.publicKey)});await savePreferences({notices:true});const result=await call({action:'subscribe',subscription:sub.toJSON()});badge();await refresh();if(result.failures)say('Dispozitiv înregistrat, dar livrarea a eșuat. Serverul va reîncerca.');else if(result.sent)say('Activat. Avertizarea pentru scadențele apropiate a fost trimisă.');}catch(e){enable.disabled=false;say(e.message)}};
+disable.onclick=async()=>{disable.disabled=true;try{const sub=await reg.pushManager.getSubscription();if(sub){await call({action:'unsubscribe',endpoint:sub.endpoint});await sub.unsubscribe()}if(navigator.clearAppBadge)await navigator.clearAppBadge();await refresh()}catch(e){disable.disabled=false;say(e.message)}};
+};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')badge()});
+})();
