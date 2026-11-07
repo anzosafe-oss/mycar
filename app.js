@@ -123,3 +123,14 @@ if(session){user=session.user;if(passwordSetup)setupPassword();else{await load()
 }catch(err){if(!user){passwordSetup=false;sessionStorage.removeItem('mycar-password-setup');login()}report('Nu se poate continua: '+err.message);if(user){if(passwordSetup)setupPassword();else{document.querySelector('#content').innerHTML='<button id="retry" class="primary">Reîncearcă</button>';document.querySelector('#retry').onclick=()=>location.reload()}}}})();
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user&&page==='Acasă'&&!busy&&!document.querySelector('dialog[open]'))render()});
+
+document.addEventListener('click',event=>{
+if(!selectedDocumentKey||event.target.closest('[data-select-document],#documentDialog'))return;
+selectedDocumentKey=null;
+document.querySelectorAll('.document-selected').forEach(card=>{
+card.classList.remove('document-selected');
+card.querySelector('.document-select')?.setAttribute('aria-pressed','false');
+const edit=card.querySelector('.document-edit');
+if(edit){edit.disabled=true;edit.setAttribute('aria-hidden','true');edit.setAttribute('tabindex','-1')}
+});
+},{capture:true});
