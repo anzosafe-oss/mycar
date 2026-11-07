@@ -167,3 +167,10 @@ header{gap:12px}
 
 /* Focus uses the existing field border in both themes. */
 :root input:not([type=checkbox]):not([type=radio]):focus,:root select:focus,:root textarea:focus{border-color:var(--green);outline:none;box-shadow:none}
+
+/* Keep the vehicle switcher on one horizontal, scrollable row. */
+header .context{min-width:0;max-width:100%;flex-shrink:1}
+.car-switch{min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+.car-switch::-webkit-scrollbar{display:none}
+.car-switch button{flex:1 0 auto;white-space:nowrap}
+.car-switch button span{white-space:nowrap}
