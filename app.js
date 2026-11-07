@@ -92,7 +92,7 @@ dialog.close();await load();render();
 },e.currentTarget.querySelector('[type=submit]'))};
 }
 function editDocument(kind){const previous=documents.find(d=>d.vehicle_id===car&&d.kind===kind);const dialog=document.querySelector('#documentDialog');dialog.innerHTML=`<form id="documentForm"><h3>${safe(kind)}</h3><div class="field"><label for="expiry">Data expirării</label><input id="expiry" name="expiry" type="date" required value="${previous?.expiry_date||''}"></div><div class="form-actions"><button type="button" id="cancelDocument">Anulează</button><button type="submit" class="primary">Salvează</button></div></form>`;dialog.showModal();document.querySelector('#cancelDocument').onclick=()=>dialog.close();document.querySelector('#documentForm').onsubmit=e=>{e.preventDefault();const expiry=new FormData(e.currentTarget).get('expiry');action(async()=>{checked(await sb.from('documents').upsert({user_id:user.id,vehicle_id:car,kind,expiry_date:expiry},{onConflict:'vehicle_id,kind'}));await load();dialog.close();render()},e.currentTarget.querySelector('[type=submit]'))}}
-document.querySelector('#logo-icon').innerHTML=icon('car');
+document.querySelector('#logo-icon').innerHTML='<img src="icon-512.png?v=3" alt="" width="54" height="54" style="display:block;width:100%;height:100%;border-radius:inherit">';
 
 sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'){passwordSetup=true;sessionStorage.setItem('mycar-password-setup','1');user=session?.user||null;setTimeout(()=>render(),0)}if(event==='SIGNED_OUT'){user=null;cars=[];events=[];documents=[];carDraft={};passwordSetup=false;sessionStorage.removeItem('mycar-password-setup');login()}});
 (async()=>{report('Se încarcă…');try{
