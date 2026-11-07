@@ -1,3 +1,3 @@
-window.MYCAR_VERSION='1.4';
+window.MYCAR_VERSION='1.4.1';
 const versionLabel=document.querySelector('#app-version');
 if(versionLabel)versionLabel.textContent='MyCar v'+window.MYCAR_VERSION;

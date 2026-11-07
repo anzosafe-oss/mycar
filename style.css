@@ -118,3 +118,8 @@ html.iphone-webapp .app{margin-top:36px}
 .documents .document-card.document-selected{border-color:var(--green)}
 @media(max-width:700px){.document-status-row{gap:5px}.document-status-row .document-status{font-size:12px;padding:5px 7px}.document-edit{font-size:12px;padding:8px 9px}}
 
+
+.document-status-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:8px}
+.document-status-row .document-status,.document-status-row .document-edit{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:36px;margin:0;padding:6px 5px;font-size:12px;line-height:1.25;text-align:center;border-radius:20px;white-space:normal}
+.document-card:not(.document-selected) .document-edit{visibility:hidden;pointer-events:none}
+@media(max-width:700px){.document-status-row{gap:6px}.document-status-row .document-status,.document-status-row .document-edit{font-size:12px;padding:6px 4px;min-height:36px}}
