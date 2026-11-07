@@ -84,3 +84,14 @@ header .brand{gap:8px}
 header .brand h1{font-size:24px}
 header #account button{font-size:13px;padding:9px 10px}
 }
+
+.iphone-install-help{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0;padding:16px;border:1px solid #414141;border-radius:18px;background:var(--panel)}
+.iphone-install-help p{color:var(--muted);font-size:13px;margin:6px 0 0}
+.iphone-install-help .primary{font-size:14px;padding:11px 16px;min-height:44px;white-space:normal}
+.iphone-help-dialog{box-sizing:border-box;width:calc(100% - 32px);max-width:480px;max-height:calc(100dvh - 40px);overflow-y:auto;padding:22px}
+.iphone-help-heading{display:flex;gap:12px;align-items:center}.iphone-help-heading img{border-radius:12px;flex-shrink:0}.iphone-help-heading h2{font-size:23px;margin:0 0 5px}.iphone-help-heading p{margin:0;color:var(--muted);font-size:13px}
+.iphone-help-steps{list-style:none;padding:0;margin:24px 0}.iphone-help-steps li{display:flex;align-items:flex-start;gap:12px;margin:20px 0}.iphone-help-number{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--green) 16%,var(--panel));color:var(--green)}
+.iphone-help-steps h3{font-size:17px;margin:3px 0 7px}.iphone-help-steps p,.iphone-help-done{font-size:14px;color:var(--muted);line-height:1.5;margin:0}
+.iphone-help-example{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:10px;border:1px solid #555;border-radius:12px;font-size:14px}.iphone-help-example svg{color:var(--green)}.iphone-help-actions{display:flex;justify-content:flex-end;margin-top:20px}
+:root[data-theme="light"] .iphone-install-help,:root[data-theme="light"] .iphone-help-example{border-color:#b8bdb1}
+@media(max-width:420px){.iphone-install-help{align-items:stretch;flex-direction:column}.iphone-install-help .primary{align-self:flex-start}.iphone-help-dialog{padding:18px}}
