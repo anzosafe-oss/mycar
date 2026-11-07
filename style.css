@@ -95,3 +95,11 @@ header #account button{font-size:13px;padding:9px 10px}
 .iphone-help-example{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:10px;border:1px solid #555;border-radius:12px;font-size:14px}.iphone-help-example svg{color:var(--green)}.iphone-help-actions{display:flex;justify-content:flex-end;margin-top:20px}
 :root[data-theme="light"] .iphone-install-help,:root[data-theme="light"] .iphone-help-example{border-color:#b8bdb1}
 @media(max-width:420px){.iphone-install-help{align-items:stretch;flex-direction:column}.iphone-install-help .primary{align-self:flex-start}.iphone-help-dialog{padding:18px}}
+
+.history-heading{margin:0 0 22px;font-size:29px;line-height:1.3}
+.history-heading span{color:var(--green);font-weight:700;overflow-wrap:anywhere}
+@media(max-width:700px){
+.history-heading{font-size:25px}
+.filters{display:grid;grid-template-columns:.85fr 1fr 1.4fr .85fr;gap:6px;margin:20px 0 24px}
+.filters button{box-sizing:border-box;min-width:0;width:100%;white-space:nowrap;padding:10px 4px;font-size:14px;min-height:42px}
+}
