@@ -178,3 +178,11 @@ header .context{min-width:0;max-width:100%;flex-shrink:1}
 /* A registered device stays visibly selected, even while its button is disabled. */
 #pushEnable.is-active{opacity:1;cursor:default;color:#fff;background:#333;border-color:var(--green)}
 :root[data-theme="light"] #pushEnable.is-active{background:#d5e3c8;color:#233517;border-color:#588c21}
+
+/* Compact settings controls without wrapping to another row. */
+.push-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.push-options button{min-width:0;width:100%;white-space:nowrap;padding:10px 8px}
+.day-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.day-options button{min-width:0;padding:10px 4px;min-height:44px}
+@media(max-width:700px){.push-options button{font-size:13px;padding:10px 5px}.day-options{gap:6px}.day-options button{font-size:13px}}
+@media(max-width:360px){.push-options button{font-size:12px;padding-inline:3px}}
