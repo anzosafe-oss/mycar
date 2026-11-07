@@ -109,3 +109,12 @@ header #account button{font-size:13px;padding:9px 10px}
 html.iphone-webapp{--mycar-refresh-top-gap:24px}
 html.iphone-webapp .app{margin-top:36px}
 }
+
+.document-select{display:block;width:100%;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;border-radius:8px;cursor:pointer}
+.document-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px}
+.document-status-row .document-status{display:block;margin:0;min-width:0}
+.document-edit{flex-shrink:0;border:1px solid var(--green);border-radius:22px;color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--panel));font:inherit;font-size:13px;min-height:40px;padding:8px 12px}
+.document-edit:hover{border-color:var(--green);background:color-mix(in srgb,var(--green) 20%,var(--panel))}
+.documents .document-card.document-selected{border-color:var(--green)}
+@media(max-width:700px){.document-status-row{gap:5px}.document-status-row .document-status{font-size:12px;padding:5px 7px}.document-edit{font-size:12px;padding:8px 9px}}
+@media(max-width:360px){.document-status-row{flex-wrap:wrap}.document-edit{margin-left:auto}}
