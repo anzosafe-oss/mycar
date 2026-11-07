@@ -103,3 +103,9 @@ header #account button{font-size:13px;padding:9px 10px}
 .filters{display:grid;grid-template-columns:.85fr 1fr 1.4fr .85fr;gap:6px;margin:20px 0 24px}
 .filters button{box-sizing:border-box;min-width:0;width:100%;white-space:nowrap;padding:10px 4px;font-size:14px;min-height:42px}
 }
+
+/* Extra clearance below the iPhone standalone status-bar fade. */
+@media(max-width:700px){
+html.iphone-webapp{--mycar-refresh-top-gap:24px}
+html.iphone-webapp .app{margin-top:36px}
+}
