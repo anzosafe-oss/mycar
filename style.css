@@ -197,3 +197,6 @@ header .context{min-width:0;max-width:100%;flex-shrink:1}
 #invitationAdmin h3{margin:0}
 @media(max-width:700px){.invitation-actions button{font-size:13px;padding:10px 12px}}
 
+
+/* Respect the success state when the primary invitation action is hidden. */
+#documentDialog .form-actions button[hidden]{display:none}
