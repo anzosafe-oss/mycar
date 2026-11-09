@@ -1,6 +1,6 @@
-// Reserve the fixed header's actual height, including vehicle/navigation rows.
+// Reserve the logo/menu header height; cars and navigation remain in page flow.
 (()=>{
-  const bar=document.querySelector('.app-topbar');
+  const bar=document.querySelector('.app>header');
   if(!bar)return;
   function syncHeader(){
     const height=Math.ceil(bar.getBoundingClientRect().height);
@@ -12,3 +12,4 @@
   if('ResizeObserver' in window)new ResizeObserver(syncHeader).observe(bar);
   document.fonts?.ready.then(syncHeader);
 })();
+

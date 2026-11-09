@@ -290,19 +290,36 @@ nav button{grid-column:auto!important}
 .invitation-actions [data-invitation-action="approve"]{border-color:var(--green);color:var(--green)}
 
 
-/* v1.13.2: viewport-fixed header, matching MySubs. */
-:root{--app-background:#000;--mycar-header-height:206px}
+/* v1.14.0: only the brand/menu header is fixed. */
+:root{--app-background:#000;--mycar-header-height:75px}
 :root[data-theme="light"]{--app-background:#f5f5f2}
-.app{margin-top:0;padding-top:calc(var(--mycar-header-height) + 12px)}
-.app-topbar{position:fixed;top:0;left:0;right:0;width:auto;max-width:1180px;z-index:80;background:var(--app-background);padding:max(8px,env(safe-area-inset-top,0px)) 30px 1px;margin:0 auto}
-.app-topbar header{padding-bottom:0}
-.app-topbar nav{margin-bottom:16px}
-#vehicleFormSection{scroll-margin-top:16px}
+.app{margin-top:0;padding-top:calc(var(--mycar-header-height) + 14px)}
+.app>header{position:fixed;top:0;left:0;right:0;z-index:80;max-width:1180px;width:auto;margin:0 auto;padding:max(8px,env(safe-area-inset-top,0px)) 30px 13px;background:var(--app-background);border:0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.app>.context{margin:0 0 12px;min-width:0;max-width:100%;width:100%}
+.app>.context[hidden]{display:none}
+.app>.context .car-switch{max-width:100%}
 html{scroll-padding-top:var(--mycar-header-height)}
+#vehicleFormSection{scroll-margin-top:16px}
 @media(max-width:700px){
-  .app,html.iphone-webapp .app{margin-top:0;padding-top:calc(var(--mycar-header-height) + 10px)}
+  .app,html.iphone-webapp .app{margin-top:0;padding-top:calc(var(--mycar-header-height) + 12px)}
   html.iphone-webapp{--mycar-refresh-top-gap:8px}
-  .app-topbar{left:16px;right:16px;padding-left:12px;padding-right:12px}
-  .app-topbar header{row-gap:12px}
-  .app-topbar nav{margin:12px 0}
+  .app>header{left:16px;right:16px;padding-left:12px;padding-right:12px}
+  .app>.context .car-switch{width:100%}
+  .app>nav{margin:12px 0}
 }
+.widget-settings>h3{margin-bottom:10px}
+.widget-help{font-size:13px;line-height:1.5}
+.widget-row{display:grid;grid-template-columns:36px minmax(0,1fr) 64px 28px;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #414141}
+.widget-grip{touch-action:none;cursor:grab;min-height:44px;border:0;background:transparent;color:var(--muted);padding:6px}
+.widget-grip:active{cursor:grabbing}
+.widget-info{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
+.widget-title{font-size:16px}
+.widget-date{font-size:12px;text-align:left}
+.widget-move{display:flex;gap:4px}
+.widget-move button{min-height:40px;width:30px;padding:3px;border:1px solid #555;border-radius:18px;background:transparent;color:var(--muted)}
+.widget-move button:disabled{opacity:.25;cursor:default}
+.widget-row[data-enabled="false"] .widget-title{color:var(--muted)}
+.widget-dragging{border-radius:14px;outline:1px solid var(--green);background:color-mix(in srgb,var(--green) 10%,var(--panel))}
+.widget-row input{margin:0}
+.documents:empty{display:none}
+@media(max-width:700px){.widget-row{gap:8px;grid-template-columns:32px minmax(0,1fr) 64px 24px}.widget-date{font-size:11px}}
