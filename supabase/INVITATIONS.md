@@ -7,9 +7,10 @@ Supabase Auth invitation to the stored address and uses the fixed MyCar redirect
 
 ## Deployment status
 
-The schema and `mycar-invitations` server function are installed. Frontend release
-is held on its feature branch until owner email notifications are configured.
-Production remains on v1.8.3 while this prerequisite is missing.
+The schema and `mycar-invitations` server function are installed. The owner has
+saved `MYCAR_RESEND_API_KEY`; the live health endpoint reports emailConfigured=true.
+The v1.9.0 frontend is ready for publication. End-to-end inbox delivery still needs
+to be verified through an actual request and owner approval in the application.
 
 ## Email configuration required before publishing
 
