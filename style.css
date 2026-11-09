@@ -288,3 +288,20 @@ nav button{grid-column:auto!important}
 @media(max-width:700px){.invitation-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.invitation-actions button{min-width:0;font-size:13px;padding:10px 8px;white-space:normal}.invitation-request-heading{flex-wrap:wrap;gap:10px}}
 
 .invitation-actions [data-invitation-action="approve"]{border-color:var(--green);color:var(--green)}
+
+
+/* v1.13.1: compact, sticky app header and navigation. */
+:root{--app-background:#000}
+:root[data-theme="light"]{--app-background:#f5f5f2}
+.app-topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:60;background:var(--app-background);padding:8px 0 1px;margin-top:-8px;isolation:isolate}
+.app-topbar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:env(safe-area-inset-top,0px);background:var(--app-background)}
+.app-topbar header{padding-bottom:0}
+.app-topbar nav{margin-bottom:16px}
+@media(max-width:700px){
+  .app,html.iphone-webapp .app{margin-top:6px;padding-top:8px}
+  html.iphone-webapp{--mycar-refresh-top-gap:8px}
+  .app-topbar header{row-gap:12px}
+  .app-topbar nav{margin:12px 0}
+}
+
+#vehicleFormSection{scroll-margin-top:220px}
