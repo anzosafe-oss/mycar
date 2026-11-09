@@ -186,3 +186,14 @@ header .context{min-width:0;max-width:100%;flex-shrink:1}
 .day-options button{min-width:0;padding:10px 4px;min-height:44px}
 @media(max-width:700px){.push-options button{font-size:13px;padding:10px 5px}.day-options{gap:6px}.day-options button{font-size:13px}}
 @media(max-width:360px){.push-options button{font-size:12px;padding-inline:3px}}
+
+.text-link{display:inline;padding:0;border:0;border-radius:0;background:none;color:var(--green);font:inherit;text-decoration:underline;text-underline-offset:3px}
+.invitation-trap{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#invitationAdmin[hidden]{display:none}
+.invitation-request{padding:18px 0;border-top:1px solid #414141}
+.invitation-request-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.invitation-request-heading strong{overflow-wrap:anywhere;min-width:0}
+.invitation-actions{display:flex;flex-wrap:wrap;gap:10px}
+#invitationAdmin h3{margin:0}
+@media(max-width:700px){.invitation-actions button{font-size:13px;padding:10px 12px}}
+
