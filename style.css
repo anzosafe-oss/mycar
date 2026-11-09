@@ -249,3 +249,8 @@ footer #account button{min-height:44px;font-size:13px;padding:9px 15px}
   .event-form-actions button{font-size:14px;padding:11px 8px}
 }
 
+
+/* v1.12.1: borderless app shell and full-width vehicle form. */
+.app{border:0!important;border-radius:0!important}
+#vehicleFormSection{border:0;border-radius:0;padding:0;width:100%;max-width:none;min-width:0;text-align:left}
+#vehicleFormSection form{width:100%;max-width:none;margin:0}
