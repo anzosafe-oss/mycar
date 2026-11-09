@@ -27,6 +27,28 @@ async function notifyOwner(request){
   return true;
 }
 
+async function accountSummaries(requests){
+  const [activityRows,vehicleRows,preferenceRows]=await Promise.all([
+    db.from('account_activity').select('user_id,last_seen_at').order('last_seen_at',{ascending:false}).limit(100),
+    db.from('vehicles').select('user_id').limit(500),
+    db.from('preferences').select('user_id').limit(100)
+  ]);
+  const activity=checked(activityRows),vehicleUsers=checked(vehicleRows),preferenceUsers=checked(preferenceRows);
+  const hasData=new Set([...vehicleUsers,...preferenceUsers].map(r=>r.user_id));
+  const ids=[...new Set([...activity.map(r=>r.user_id),...hasData,...requests.filter(r=>r.status==='approved'&&r.invited_user_id).map(r=>r.invited_user_id)])].slice(0,100);
+  const accounts=[];
+  // Keep concurrency bounded when reviewing many accounts.
+  for(let i=0;i<ids.length;i+=8){
+    const batch=await Promise.all(ids.slice(i,i+8).map(async id=>{
+      const result=await db.auth.admin.getUserById(id);if(result.error||!result.data.user)return null;
+      const account=result.data.user,visit=activity.find(r=>r.user_id===id)?.last_seen_at||null;
+      return {id,email:account.email,active:!!account.email_confirmed_at&&(!!visit||hasData.has(id)),last_seen_at:visit};
+    }));
+    accounts.push(...batch.filter(Boolean));
+  }
+  return accounts;
+}
+
 export async function handler(req){
   if(req.headers.get('origin')&&req.headers.get('origin')!==ORIGIN)return reply({error:'Origine nepermisă.'},403);
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
@@ -58,12 +80,16 @@ export async function handler(req){
     const auth=await db.auth.getUser(token);
     if(auth.error||!auth.data.user)return reply({error:'Autentificare necesară.'},401);
     const uid=auth.data.user.id;
+    if(body.action==='visit'){
+      checked(await db.from('account_activity').upsert({user_id:uid,last_seen_at:new Date().toISOString()},{onConflict:'user_id'}));
+      return reply({ok:true});
+    }
     const admin=checked(await db.from('invitation_admins').select('user_id').eq('user_id',uid).maybeSingle());
     if(body.action==='admin')return reply({isAdmin:!!admin});
     if(!admin)return reply({error:'Acces rezervat administratorului.'},403);
     if(body.action==='list'){
-      const requests=checked(await db.from('invitation_requests').select('id,email,status,created_at,updated_at,notified_at,notification_error,invite_error').order('created_at',{ascending:false}).limit(100));
-      return reply({requests,emailConfigured:mailConfigured()});
+      const requests=checked(await db.from('invitation_requests').select('id,email,status,created_at,updated_at,notified_at,notification_error,invite_error,invited_user_id').order('created_at',{ascending:false}).limit(100));
+      const accounts=await accountSummaries(requests);return reply({requests:requests.map(r=>({...r,account:accounts.find(a=>a.id===r.invited_user_id)||null})),accounts,emailConfigured:mailConfigured()});
     }
     if(!['approve','reject','notify'].includes(body.action)||typeof body.id!=='string'||!/^[a-f0-9-]{36}$/i.test(body.id))return reply({error:'Acțiune invalidă.'},400);
     const request=checked(await db.from('invitation_requests').select('*').eq('id',body.id).maybeSingle());
@@ -88,8 +114,9 @@ export async function handler(req){
       checked(await db.from('invitation_requests').update({status:'pending',invite_error:message,updated_at:new Date().toISOString()}).eq('id',body.id).eq('status','sending'));
       return reply({error:message},502);
     }
-    checked(await db.from('invitation_requests').update({status:'approved',invite_error:null,updated_at:new Date().toISOString()}).eq('id',body.id).eq('status','sending'));
+    checked(await db.from('invitation_requests').update({status:'approved',invited_user_id:result.data?.user?.id||null,invite_error:null,updated_at:new Date().toISOString()}).eq('id',body.id).eq('status','sending'));
     return reply({ok:true});
   }catch{console.error('MyCar invitation request failed');return reply({error:'Cererea nu a putut fi procesată. Încearcă din nou.'},500)}
 }
 Deno.serve(handler);
+

@@ -1,11 +1,18 @@
 (()=>{
-let adminFor=null,adminAllowed=false;
+let adminFor=null,adminAllowed=false,lastVisitUser=null,lastVisitAt=0;
 async function call(body){
   const r=await sb.functions.invoke('mycar-invitations',{body});
   if(r.error){let detail;try{detail=await r.error.context?.json()}catch{}throw Error(detail?.error||'Nu se poate contacta serviciul de invitații. Încearcă din nou.')}
   if(r.data?.error)throw Error(r.data.error);
   return r.data;
 }
+window.recordMyCarVisit=async()=>{
+  if(!user||passwordSetup||document.visibilityState==='hidden')return;
+  const uid=user.id,now=Date.now();if(lastVisitUser===uid&&now-lastVisitAt<300000)return;
+  lastVisitUser=uid;lastVisitAt=now;
+  try{await call({action:'visit'})}catch{if(lastVisitUser===uid)lastVisitAt=0}
+};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')window.recordMyCarVisit()});
 function requestInvitation(){
   const dialog=document.querySelector('#documentDialog');
   dialog.removeAttribute('aria-describedby');dialog.setAttribute('aria-labelledby','invitationTitle');
@@ -30,7 +37,10 @@ async function loadRequests(section){
   try{
     const result=await call({action:'list'});if(!section.isConnected)return;
     message.textContent=result.emailConfigured?'':'Emailurile pentru cereri noi nu sunt încă configurate. Cererile rămân disponibile aici.';
-    list.innerHTML=result.requests.length?result.requests.map(r=>'<article class="invitation-request"><div class="invitation-request-heading"><strong>'+safe(r.email)+'</strong><span class="badge">'+safe(labels[r.status]||r.status)+'</span></div><p class="muted">'+new Intl.DateTimeFormat('ro-RO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(r.created_at))+'</p>'+(r.invite_error?'<p role="status">'+safe(r.invite_error)+'</p>':'')+(r.status==='pending'?'<div class="invitation-actions"><button class="primary" type="button" data-invitation-action="approve" data-id="'+r.id+'">Aprobă și trimite invitația</button><button class="danger-button" type="button" data-invitation-action="reject" data-id="'+r.id+'">Respinge</button></div>':'')+'</article>').join(''):'<p class="muted">Nu ai cereri de acces.</p>';
+    list.innerHTML=result.requests.length?result.requests.map(r=>'<article class="invitation-request"><div class="invitation-request-heading"><strong>'+safe(r.email)+'</strong><span class="badge">'+safe(r.status==='approved'&&r.account?.active?'Cont activ':labels[r.status]||r.status)+'</span></div><p class="muted">'+new Intl.DateTimeFormat('ro-RO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(r.created_at))+'</p>'+(r.status==='approved'&&r.account?'<p class="muted">'+safe(MyCarUtils.lastVisitLabel(r.account.last_seen_at))+'</p>':'')+(r.invite_error?'<p role="status">'+safe(r.invite_error)+'</p>':'')+(r.status==='pending'?'<div class="invitation-actions"><button class="primary" type="button" data-invitation-action="approve" data-id="'+r.id+'">Aprobă și trimite invitația</button><button class="danger-button" type="button" data-invitation-action="reject" data-id="'+r.id+'">Respinge</button></div>':'')+'</article>').join(''):'<p class="muted">Nu ai cereri de acces.</p>';
+    if(result.accounts?.length){
+      list.insertAdjacentHTML('beforeend','<div class="managed-accounts"><h4>Conturi MyCar</h4>'+result.accounts.map(account=>'<article class="managed-account"><div class="invitation-request-heading"><strong>'+safe(account.email)+'</strong><span class="badge '+(account.active?'account-active':'')+'">'+(account.active?'Cont activ':'În așteptarea activării')+'</span></div><p class="muted">'+safe(MyCarUtils.lastVisitLabel(account.last_seen_at))+'</p></article>').join('')+'</div>');
+    }
     list.querySelectorAll('[data-invitation-action]').forEach(button=>button.onclick=()=>confirmReview(section,button.dataset.id,button.dataset.invitationAction));
   }catch(err){message.textContent=err.message}
 }
@@ -45,6 +55,7 @@ function confirmReview(section,id,action){
   };
 }
 window.bindMyCarInvitations=async()=>{
+  if(user)await window.recordMyCarVisit();
   const trigger=document.querySelector('#requestInvitation');if(trigger)trigger.onclick=requestInvitation;
   const section=document.querySelector('#invitationAdmin');if(!section||!user)return;
   const uid=user.id;
@@ -56,3 +67,4 @@ window.bindMyCarInvitations=async()=>{
 };
 window.bindMyCarInvitations();
 })();
+
