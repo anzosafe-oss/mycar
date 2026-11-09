@@ -323,3 +323,15 @@ html{scroll-padding-top:var(--mycar-header-height)}
 .widget-row input{margin:0}
 .documents:empty{display:none}
 @media(max-width:700px){.widget-row{gap:8px;grid-template-columns:32px minmax(0,1fr) 64px 24px}.widget-date{font-size:11px}}
+
+
+/* v1.14.1: uniform account/request status placement. */
+.invitation-request-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+.invitation-request-heading strong{min-width:0;overflow-wrap:anywhere}
+.invitation-request-heading .badge{max-width:100%;justify-self:start;white-space:normal}
+@media(max-width:700px){
+  .invitation-request-heading{grid-template-columns:minmax(0,1fr);gap:10px}
+  .invitation-request-heading strong{width:100%}
+  .invitation-request-heading .badge{justify-self:start}
+  .managed-account>.muted{margin:12px 0 0;font-size:14px}
+}
