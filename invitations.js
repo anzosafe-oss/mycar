@@ -1,5 +1,19 @@
 (()=>{
-let adminFor=null,adminAllowed=false,lastVisitUser=null,lastVisitAt=0;
+let adminFor=null,adminAllowed=false,adminPending=null,lastVisitUser=null,lastVisitAt=0;
+window.isMyCarAdmin=()=>!!user&&!passwordSetup&&adminFor===user.id&&adminAllowed;
+window.resetMyCarAdmin=()=>{adminFor=null;adminAllowed=false;adminPending=null;window.renderMyCarMenu?.()};
+async function ensureAdmin(uid){
+  if(adminFor===uid)return adminAllowed;
+  if(!adminPending||adminPending.uid!==uid){
+    const task={uid};
+    task.promise=call({action:'admin'}).then(result=>{
+      if(!user||user.id!==uid||adminPending!==task)return false;
+      adminFor=uid;adminAllowed=result.isAdmin===true;return adminAllowed;
+    }).finally(()=>{if(adminPending===task)adminPending=null});
+    adminPending=task;
+  }
+  return adminPending.promise;
+}
 async function call(body){
   const r=await sb.functions.invoke('mycar-invitations',{body});
   if(r.error){let detail;try{detail=await r.error.context?.json()}catch{}throw Error(detail?.error||'Nu se poate contacta serviciul de invitații. Încearcă din nou.')}
@@ -32,12 +46,13 @@ function requestInvitation(){
 }
 const labels={pending:'În așteptare',sending:'Se trimite invitația',approved:'Invitație trimisă',rejected:'Respinsă'};
 async function loadRequests(section){
+  if(!window.isMyCarAdmin())return;const requestUser=user.id;
   const list=section.querySelector('[data-invitation-list]'),message=section.querySelector('[data-invitation-status]');
   message.textContent='Se încarcă cererile…';
   try{
-    const result=await call({action:'list'});if(!section.isConnected)return;
+    const result=await call({action:'list'});if(!section.isConnected||user?.id!==requestUser||!window.isMyCarAdmin())return;
     message.textContent=result.emailConfigured?'':'Emailurile pentru cereri noi nu sunt încă configurate. Cererile rămân disponibile aici.';
-    list.innerHTML=result.requests.length?result.requests.map(r=>'<article class="invitation-request"><div class="invitation-request-heading"><strong>'+safe(r.email)+'</strong><span class="badge">'+safe(r.status==='approved'&&r.account?.active?'Cont activ':labels[r.status]||r.status)+'</span></div><p class="muted">'+new Intl.DateTimeFormat('ro-RO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(r.created_at))+'</p>'+(r.status==='approved'&&r.account?'<p class="muted">'+safe(MyCarUtils.lastVisitLabel(r.account.last_seen_at))+'</p>':'')+(r.invite_error?'<p role="status">'+safe(r.invite_error)+'</p>':'')+(r.status==='pending'?'<div class="invitation-actions"><button class="primary" type="button" data-invitation-action="approve" data-id="'+r.id+'">Aprobă și trimite invitația</button><button class="danger-button" type="button" data-invitation-action="reject" data-id="'+r.id+'">Respinge</button></div>':'')+'</article>').join(''):'<p class="muted">Nu ai cereri de acces.</p>';
+    list.innerHTML=result.requests.length?result.requests.map(r=>'<article class="invitation-request"><div class="invitation-request-heading"><strong>'+safe(r.email)+'</strong><span class="badge">'+safe(r.status==='approved'&&r.account?.active?'Cont activ':labels[r.status]||r.status)+'</span></div><p class="muted">'+new Intl.DateTimeFormat('ro-RO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(r.created_at))+'</p>'+(r.status==='approved'&&r.account?'<p class="muted">'+safe(MyCarUtils.lastVisitLabel(r.account.last_seen_at))+'</p>':'')+(r.invite_error?'<p role="status">'+safe(r.invite_error)+'</p>':'')+(r.status==='pending'?'<div class="invitation-actions"><button class="secondary-button" type="button" data-invitation-action="approve" data-id="'+r.id+'">Aprobă</button><button class="danger-button" type="button" data-invitation-action="reject" data-id="'+r.id+'">Respinge</button></div>':'')+'</article>').join(''):'<p class="muted">Nu ai cereri de acces.</p>';
     if(result.accounts?.length){
       list.insertAdjacentHTML('beforeend','<div class="managed-accounts"><h4>Conturi MyCar</h4>'+result.accounts.map(account=>'<article class="managed-account"><div class="invitation-request-heading"><strong>'+safe(account.email)+'</strong><span class="badge '+(account.active?'account-active':'')+'">'+(account.active?'Cont activ':'În așteptarea activării')+'</span></div><p class="muted">'+safe(MyCarUtils.lastVisitLabel(account.last_seen_at))+'</p></article>').join('')+'</div>');
     }
@@ -45,26 +60,37 @@ async function loadRequests(section){
   }catch(err){message.textContent=err.message}
 }
 function confirmReview(section,id,action){
+  if(!window.isMyCarAdmin())return;
   const dialog=document.querySelector('#documentDialog'),approve=action==='approve';
   dialog.removeAttribute('aria-describedby');dialog.setAttribute('aria-labelledby','reviewTitle');
   dialog.innerHTML='<form id="reviewInvitation"><h3 id="reviewTitle" tabindex="-1" autofocus>'+(approve?'Aprobi accesul?':'Respingi cererea?')+'</h3><p class="muted">'+(approve?'Persoana va primi un email cu invitația și își va alege singură parola.':'Cererea va fi marcată ca respinsă. Nu se trimite nicio invitație.')+'</p><p id="reviewFeedback" role="status"></p><div class="form-actions"><button id="cancelReview" class="secondary-button" type="button">Anulează</button><button class="'+(approve?'primary':'danger-button')+'" type="submit">'+(approve?'Aprobă și trimite':'Respinge cererea')+'</button></div></form>';
   dialog.showModal();dialog.querySelector('h3').focus({preventScroll:true});dialog.querySelector('#cancelReview').onclick=()=>dialog.close();
   dialog.querySelector('form').onsubmit=async e=>{
     e.preventDefault();const submit=e.currentTarget.querySelector('[type=submit]');if(submit.disabled)return;submit.disabled=true;
-    try{await call({action,id});dialog.close();await loadRequests(section)}catch(err){dialog.querySelector('#reviewFeedback').textContent=err.message;submit.disabled=false}
+    try{if(!window.isMyCarAdmin())throw Error('Acces rezervat administratorului.');await call({action,id});dialog.close();await loadRequests(section)}catch(err){dialog.querySelector('#reviewFeedback').textContent=err.message;submit.disabled=false}
   };
 }
 window.bindMyCarInvitations=async()=>{
-  if(user)await window.recordMyCarVisit();
+  if(user)window.recordMyCarVisit();
   const trigger=document.querySelector('#requestInvitation');if(trigger)trigger.onclick=requestInvitation;
-  const section=document.querySelector('#invitationAdmin');if(!section||!user)return;
-  const uid=user.id;
+  if(!user||passwordSetup){window.resetMyCarAdmin();return}
+  const uid=user.id,section=document.querySelector('#invitationAdmin'),gate=document.querySelector('#adminAccessStatus');
   try{
-    if(adminFor!==uid){const result=await call({action:'admin'});if(!user||user.id!==uid)return;adminFor=uid;adminAllowed=result.isAdmin}
-    if(!adminAllowed||!section.isConnected)return;
+    await ensureAdmin(uid);
+    if(!user||user.id!==uid)return;
+    window.renderMyCarMenu?.();
+    if(!section||!section.isConnected)return;
+    if(!window.isMyCarAdmin()){section.hidden=true;if(gate){gate.hidden=false;gate.textContent='Acces rezervat administratorului.'}return}
+    if(gate)gate.hidden=true;
     section.hidden=false;section.querySelector('[data-refresh-invitations]').onclick=()=>loadRequests(section);await loadRequests(section);
-  }catch{/* Administrative controls stay hidden until server authorization succeeds. */}
+  }catch{
+    if(!user||user.id!==uid)return;
+    window.renderMyCarMenu?.();
+    if(section?.isConnected)section.hidden=true;
+    if(gate?.isConnected){gate.hidden=false;gate.textContent='Accesul nu a putut fi verificat. Reîncearcă deschizând pagina din meniu.'}
+  }
 };
 window.bindMyCarInvitations();
 })();
+
 

@@ -254,3 +254,37 @@ footer #account button{min-height:44px;font-size:13px;padding:9px 15px}
 .app{border:0!important;border-radius:0!important}
 #vehicleFormSection{border:0;border-radius:0;padding:0;width:100%;max-width:none;min-width:0;text-align:left}
 #vehicleFormSection form{width:100%;max-width:none;margin:0}
+
+
+/* v1.13.0: account navigation dropdown. */
+header{position:relative}
+.header-menu{position:relative;order:3;flex-shrink:0;margin-left:auto}
+.menu-trigger{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 16px;border:1px solid #555;border-radius:30px;background:transparent;color:inherit}
+.menu-trigger svg{width:19px;height:19px}
+.menu-trigger[aria-expanded="true"]{border-color:var(--green);color:var(--green);background:color-mix(in srgb,var(--green) 8%,var(--panel))}
+.account-dropdown{position:absolute;right:0;top:calc(100% + 10px);z-index:50;width:230px;padding:8px;background:var(--panel);border:1px solid #414141;border-radius:20px;box-shadow:0 12px 40px #0008}
+.account-dropdown[hidden]{display:none}
+.menu-caption{color:var(--muted);font-size:10px;letter-spacing:1.5px;margin:8px 12px}
+.account-dropdown button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;text-align:left;border:0;border-radius:12px;background:transparent;padding:10px 12px;font-size:15px;color:inherit}
+.account-dropdown button svg{width:20px;height:20px;color:var(--muted)}
+.account-dropdown button:hover,.account-dropdown button:focus-visible{background:color-mix(in srgb,var(--green) 10%,var(--panel));color:var(--green);outline:0}
+.account-dropdown button:hover svg,.account-dropdown button:focus-visible svg{color:var(--green)}
+.menu-divider{height:1px;background:#414141;margin:6px 12px}
+footer #account:empty{display:none}
+nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+nav button{grid-column:auto!important}
+
+.about-app{max-width:650px}
+.about-app>h3{margin-top:18px}
+.about-app>.row{padding:14px 0;border-top:1px solid #414141}
+:root[data-theme="light"] .account-dropdown{border-color:#b8bdb1;box-shadow:0 12px 40px #0002}
+@media(max-width:700px){header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px 10px}header .brand{grid-column:1;grid-row:1}header .header-menu{grid-column:2;grid-row:1}header .context{grid-column:1/-1;grid-row:2;width:100%;margin:0}header .context[hidden]{display:none}.menu-trigger{padding:9px 13px;font-size:14px}.account-dropdown{width:220px;max-width:calc(100vw - 40px)}nav{grid-template-columns:repeat(4,minmax(0,1fr))}nav button{font-size:12px}}
+
+
+.header-menu[hidden]{display:none}
+.account-dropdown button[aria-current="page"],.account-dropdown button[aria-current="page"] svg{color:var(--green)}
+.invitation-request-heading strong{overflow-wrap:anywhere;min-width:0}
+.invitation-actions button{min-height:44px}
+@media(max-width:700px){.invitation-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.invitation-actions button{min-width:0;font-size:13px;padding:10px 8px;white-space:normal}.invitation-request-heading{flex-wrap:wrap;gap:10px}}
+
+.invitation-actions [data-invitation-action="approve"]{border-color:var(--green);color:var(--green)}
