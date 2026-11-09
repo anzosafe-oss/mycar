@@ -200,3 +200,13 @@ header .context{min-width:0;max-width:100%;flex-shrink:1}
 
 /* Respect the success state when the primary invitation action is hidden. */
 #documentDialog .form-actions button[hidden]{display:none}
+
+/* Reserve the edit action so vehicle cards do not resize on selection. */
+.vehicle{display:flex;flex-direction:column}
+.vehicle-edit-action{margin-top:auto;padding-top:16px}
+.vehicle-edit-button{width:100%}
+.vehicle:not(.selected) .vehicle-edit-button{visibility:hidden;pointer-events:none}
+.vehicle-edit-form-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vehicle-edit-form-actions button{min-width:0;white-space:normal}
+#vehicleFormSection{scroll-margin-top:24px}
+@media(max-width:700px){.vehicle-edit-button{font-size:13px}.vehicle-edit-form-actions button{font-size:14px;padding:11px 8px}}
