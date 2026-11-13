@@ -13,6 +13,9 @@ if(!token)return reply({error:'Autentificare necesară.'},401);
 const {data:auth,error:authError}=await db.auth.getUser(token);
 if(authError||!auth.user)return reply({error:'Autentificare necesară.'},401);
 try{
+const access=await db.rpc('access_allowed_for',{uid:auth.user.id});
+if(access.error)throw access.error;
+if(access.data!==true)return reply({error:'Accesul la MyCar nu este activ.'},403);
 const body=await req.json();
 if(!['config','test'].includes(body.action))return reply({error:'Acțiune invalidă.'},400);
 let {data:config,error}=await db.from('push_test_config').select('keys').eq('id',true).maybeSingle();

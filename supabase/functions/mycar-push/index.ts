@@ -11,6 +11,7 @@ let query=db.from('push_subscriptions').select('*');if(uid)query=query.eq('user_
 const subs=checked(await query);let sent=0,failures=0;
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Bucharest',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 for(const sub of subs){
+if(!checked(await db.rpc('access_allowed_for',{uid:sub.user_id})))continue;
 const pref=checked(await db.from('preferences').select('*').eq('user_id',sub.user_id).maybeSingle());if(!pref?.notifications_enabled)continue;
 const docs=checked(await db.from('documents').select('id,kind,expiry_date,vehicle_id').eq('user_id',sub.user_id));
 const due=docs.map((d:any)=>({...d,days:Math.round((Date.parse(d.expiry_date+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000)})).filter((d:any)=>d.expiry_date&&d.days<=pref.reminder_days);
@@ -40,6 +41,7 @@ if(cron){const raw=checked(await db.from('push_test_config').select('keys').eq('
 const token=req.headers.get('authorization')?.replace(/^Bearer /i,'');if(!token)return reply({error:'Autentificare necesară.'},401);
 const auth=await db.auth.getUser(token);if(auth.error||!auth.data.user)return reply({error:'Autentificare necesară.'},401);
 const uid=auth.data.user.id,body=await req.json();
+if(!checked(await db.rpc('access_allowed_for',{uid})))return reply({error:'Accesul la MyCar nu este activ.'},403);
 if(body.action==='config')return reply({publicKey:(await config()).publicKey});
 if(body.action==='subscribe'){if(!valid(body.subscription))return reply({error:'Abonament push invalid.'},400);
 const existing=checked(await db.from('push_subscriptions').select('user_id').eq('endpoint',body.subscription.endpoint).maybeSingle());

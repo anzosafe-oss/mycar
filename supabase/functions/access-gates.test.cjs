@@ -1,0 +1,8 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const {stripTypeScriptTypes}=require('node:module');
+function setup(name){let callback,fetches=0;const calls=[];const db={auth:{getUser:async()=>({data:{user:{id:'revoked'}},error:null})},rpc:async(name,args)=>{calls.push({name,args});return {data:false}},from:()=>{const q={};q.select=()=>q;q.eq=()=>q;q.then=(a,b)=>Promise.resolve({data:[{user_id:'revoked'}],error:null}).then(a,b);return q}};
+const c={createClient:()=>db,webpush:{},Response,Request,URL,AbortSignal,Intl,Date,console,Deno:{env:{get:()=>''},serve:fn=>{callback=fn}},fetch:()=>{fetches++;throw Error('No request should be sent')}};
+vm.createContext(c);const text=stripTypeScriptTypes(fs.readFileSync(__dirname+'/'+name+'/index.ts','utf8')).replace(/^import .*;\n/gm,'').replaceAll('export ','');vm.runInContext(text+(name==='mycar-push'?';globalThis.dispatchTest=dispatch;':''),c);
+return {call:()=>callback(new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer existing-session','Content-Type':'application/json'},body:JSON.stringify({action:'check'})})),calls,c,fetches:()=>fetches};}
+for(const name of ['mycar-push','mycar-push-test'])test(name+' blocks a revoked authenticated user before any delivery',async()=>{const s=setup(name);assert.equal((await s.call()).status,403);assert.equal(s.calls[0].name,'access_allowed_for');assert.equal(s.calls[0].args.uid,'revoked');assert.equal(s.fetches(),0)});
+test('scheduled push dispatch skips revoked subscriptions',async()=>{const s=setup('mycar-push');const result=await s.c.dispatchTest({});assert.equal(result.sent,0);assert.equal(s.fetches(),0);assert.equal(s.calls[0].args.uid,'revoked')});

@@ -1,0 +1,7 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const app=fs.readFileSync(__dirname+'/app.js','utf8');
+const guard=app.slice(app.indexOf('async function requireMyCarAccess'),app.indexOf('async function load(){'));
+function fixture(allowed,error=null){const calls=[];const c={user:{id:'test-user'},passwordSetup:true,cars:[1],events:[1],eventRecords:[1],documents:[1],car:'car',Error,sb:{rpc:async()=>({data:allowed,error}),auth:{signOut:async options=>{calls.push(options)}}},checked:r=>{if(r.error)throw r.error;return r.data},sessionStorage:{removeItem:()=>{}},login:()=>calls.push('login'),report:m=>calls.push(m)};vm.createContext(c);vm.runInContext(guard+';globalThis.checkAccess=requireMyCarAccess;',c);return {c,calls};}
+test('an allowed account remains signed in',async()=>{const {c,calls}=fixture(true);assert.equal(await c.checkAccess(),true);assert(c.user);assert.equal(calls.length,0)});
+test('revoked access clears MyCar data and signs out this app locally',async()=>{const {c,calls}=fixture(false);await assert.rejects(c.checkAccess(),e=>e.code==='mycar_access_denied');assert.equal(c.user,null);for(const k of ['cars','events','eventRecords','documents'])assert.equal(c[k].length,0);assert.equal(calls[0].scope,'local');assert(calls.includes('login'))});
+test('a temporary access-check failure does not revoke the session',async()=>{const {c,calls}=fixture(null,Error('offline'));await assert.rejects(c.checkAccess(),/offline/);assert(c.user);assert.equal(calls.length,0)});

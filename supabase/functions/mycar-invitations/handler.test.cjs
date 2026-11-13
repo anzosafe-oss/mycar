@@ -5,14 +5,14 @@ const vm=require('node:vm');
 const {webcrypto}=require('node:crypto');
 const source=fs.readFileSync(__dirname+'/index.ts','utf8').replace(/^import .*;\n/,'').replace('export async function handler','async function handler').replace('Deno.serve(handler);','globalThis.handle=handler;');
 const ID='00000000-0000-4000-8000-000000000001';
-function setup({authenticated=false,admin=false,results=[],inviteError=null,tableResults={},authUsers={}}={}){
+function setup({authenticated=false,admin=false,results=[],inviteError=null,tableResults={},authUsers={},accessAllowed=true}={}){
   const calls=[],queue=[...results];let invites=0;
   const db={
     auth:{getUser:async()=>authenticated?{data:{user:{id:'owner'}},error:null}:{data:{user:null},error:{message:'invalid'}},admin:{getUserById:async id=>({data:{user:authUsers[id]||null},error:null}),inviteUserByEmail:async(email,options)=>{invites++;calls.push({email,options});return {error:inviteError}}}},
     from(table){let operation='select',values;const q={};for(const method of ['select','eq','order','limit','update','upsert'])q[method]=(...args)=>{if(method==='update'||method==='upsert'){operation=method;values=args[0]}return q};
-      const finish=()=>{calls.push({table,operation,values});if(table==='invitation_admins')return {data:admin?{user_id:'owner'}:null,error:null};if(Object.hasOwn(tableResults,table))return {data:tableResults[table],error:null};return {data:queue.shift()??null,error:null}};
+      const finish=()=>{calls.push({table,operation,values});if(table==='invitation_admins')return {data:admin?{user_id:'owner'}:null,error:null};if(table==='app_access'&&!Object.hasOwn(tableResults,table))return {data:[],error:null};if(Object.hasOwn(tableResults,table))return {data:tableResults[table],error:null};return {data:queue.shift()??null,error:null}};
       q.maybeSingle=async()=>finish();q.then=(resolve,reject)=>Promise.resolve(finish()).then(resolve,reject);return q;
-    },rpc:async()=>({data:null,error:null})
+    },rpc:async(name)=>({data:name==='access_allowed_for'?accessAllowed:null,error:null})
   };
   const context={createClient:()=>db,Deno:{env:{get:key=>({SUPABASE_URL:'https://example.invalid',SUPABASE_SERVICE_ROLE_KEY:'test-secret'}[key])}},Response,Request,Headers,AbortSignal,TextEncoder,crypto:webcrypto,console};
   vm.createContext(context);vm.runInContext(source,context);
@@ -35,7 +35,9 @@ test('a visit requires authentication and cannot impersonate another user or set
 });
 test('administrator account status distinguishes an active MyCar account from an unused invitation',async()=>{
   const requests=[{id:ID,status:'approved',invited_user_id:'active',email:'active@example.invalid'},{id:'other',status:'approved',invited_user_id:'waiting',email:'waiting@example.invalid'}];
-  const s=setup({authenticated:true,admin:true,tableResults:{invitation_requests:requests,account_activity:[{user_id:'active',last_seen_at:'2026-11-09T10:00:00Z'}],vehicles:[],preferences:[]},authUsers:{active:{email:'active@example.invalid',email_confirmed_at:'2026-11-08T10:00:00Z'},waiting:{email:'waiting@example.invalid',email_confirmed_at:null}}});
+  const s=setup({authenticated:true,admin:true,tableResults:{app_access:[{user_id:'active',status:'active'},{user_id:'waiting',status:'pending'}],invitation_requests:requests,account_activity:[{user_id:'active',last_seen_at:'2026-11-09T10:00:00Z'}],vehicles:[],preferences:[]},authUsers:{active:{email:'active@example.invalid',email_confirmed_at:'2026-11-08T10:00:00Z'},waiting:{email:'waiting@example.invalid',email_confirmed_at:null}}});
   const r=await s.call({action:'list'});assert.equal(r.status,200);const body=await r.json();assert.equal(body.requests[0].account.active,true);assert.equal(body.requests[1].account.active,false);assert.equal(body.accounts[0].last_seen_at,'2026-11-09T10:00:00Z');assert.equal(s.invites(),0);
 });
 
+
+test('a revoked authenticated user cannot register another visit',async()=>{const s=setup({authenticated:true,accessAllowed:false});assert.equal((await s.call({action:'visit'})).status,403);assert(!s.calls.some(c=>c.table==='account_activity'));});

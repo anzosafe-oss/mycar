@@ -36,13 +36,14 @@ async function accountSummaries(requests){
   const activity=checked(activityRows),vehicleUsers=checked(vehicleRows),preferenceUsers=checked(preferenceRows);
   const hasData=new Set([...vehicleUsers,...preferenceUsers].map(r=>r.user_id));
   const ids=[...new Set([...activity.map(r=>r.user_id),...hasData,...requests.filter(r=>r.status==='approved'&&r.invited_user_id).map(r=>r.invited_user_id)])].slice(0,100);
+  const access=checked(await db.from('app_access').select('user_id,status'));
   const accounts=[];
   // Keep concurrency bounded when reviewing many accounts.
   for(let i=0;i<ids.length;i+=8){
     const batch=await Promise.all(ids.slice(i,i+8).map(async id=>{
       const result=await db.auth.admin.getUserById(id);if(result.error||!result.data.user)return null;
       const account=result.data.user,visit=activity.find(r=>r.user_id===id)?.last_seen_at||null;
-      return {id,email:account.email,active:!!account.email_confirmed_at&&(!!visit||hasData.has(id)),last_seen_at:visit};
+      return {id,email:account.email,active:access.find(a=>a.user_id===id)?.status==='active'&&!!account.email_confirmed_at&&(!!visit||hasData.has(id)),status:access.find(a=>a.user_id===id)?.status||'pending',last_seen_at:visit};
     }));
     accounts.push(...batch.filter(Boolean));
   }
@@ -81,6 +82,7 @@ export async function handler(req){
     if(auth.error||!auth.data.user)return reply({error:'Autentificare necesară.'},401);
     const uid=auth.data.user.id;
     if(body.action==='visit'){
+      if(!checked(await db.rpc('access_allowed_for',{uid})))return reply({error:'Accesul la MyCar nu este activ.'},403);
       checked(await db.from('account_activity').upsert({user_id:uid,last_seen_at:new Date().toISOString()},{onConflict:'user_id'}));
       return reply({ok:true});
     }
