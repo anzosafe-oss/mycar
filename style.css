@@ -335,3 +335,17 @@ html{scroll-padding-top:var(--mycar-header-height)}
   .invitation-request-heading .badge{justify-self:start}
   .managed-account>.muted{margin:12px 0 0;font-size:14px}
 }
+
+:root{--mycar-nav-height:calc(66px + env(safe-area-inset-bottom,0px))}
+html:has(#nav:not(:empty)){scroll-padding-bottom:var(--mycar-nav-height)}
+.app:has(>nav:not(:empty)){padding-bottom:calc(16px + var(--mycar-nav-height))}
+.app>#nav{
+  position:fixed;inset:auto 0 0;z-index:75;max-width:1180px;margin:0 auto;
+  padding:4px max(8px,env(safe-area-inset-right,0px)) calc(5px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+  grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;
+  background:var(--app-background);border-top:1px solid var(--panel);
+}
+.app>#nav:empty{display:none}
+#nav button{min-height:56px;padding:5px 2px;gap:4px;background:transparent}
+#nav button.active{background:var(--panel)}
+.vehicle-notes-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;margin:0 0 16px}
