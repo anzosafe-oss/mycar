@@ -40,35 +40,69 @@ function vehicles(){return intro('Garajul meu','Selectează mașina pe care vrei
 function vehicleNotes(){
   const vehicle=C();
   if(!vehicle)return intro('Notițe','Adaugă o mașină ca să îi poți salva notițele.', '<button class="primary" data-go="Mașini">Mergi la garaj</button>');
-  return intro('Notițe',safe(vehicle.name))+card(
-    (vehicle.notes
-      ? `<p class="vehicle-notes-text">${safe(vehicle.notes)}</p>`
-      : '<p class="muted">Notează aici dimensiunile ștergătoarelor, anvelopele, specificația uleiului sau coduri de piese.</p>')
-    + `<button type="button" class="secondary-button" id="editVehicleNotes">${vehicle.notes?'Modifică notițele':'Adaugă notițe'}</button>`
-  );
+  const notes=vehicleNoteEntries(vehicle);
+  return intro('Notițe',safe(vehicle.name),'<button type="button" class="primary" id="addVehicleNote">Adaugă notiță</button>')
+    + (notes.length?notes.map((note,index)=>card(`
+      <h3>${safe(note.title)}</h3>
+      <p class="vehicle-notes-text">${safe(note.text)}</p>
+      <div class="form-actions">
+        <button type="button" class="secondary-button" data-edit-note="${index}" aria-label="Modifică: ${safe(note.title)}">Modifică</button>
+        <button type="button" class="danger-button" data-delete-note="${index}" aria-label="Șterge: ${safe(note.title)}">Șterge</button>
+      </div>`)).join('')
+      :card('<p class="muted">Adaugă o notiță pentru anvelope, ștergătoare, ulei sau coduri de piese.</p>'));
 }
 
-function editVehicleNotes(){
+function vehicleNoteEntries(vehicle){
+  const entries=vehicle.noteCollection?.entries;
+  return Array.isArray(entries)?entries:vehicle.notes?[{title:'Notiță existentă',text:vehicle.notes}]:[];
+}
+
+async function saveVehicleNotes(vehicle,entries){
+  const previous=vehicle.noteCollection;
+  const notes_collection={revision:(previous?.revision??0)+1,entries};
+  const query=sb.from('vehicles').update({notes_collection,notes:null}).eq('id',vehicle.id).eq('user_id',user.id);
+  if(previous)query.eq('notes_collection->>revision',previous.revision);
+  else{
+    query.is('notes_collection',null);
+    if(vehicle.notes===null)query.is('notes',null);
+    else query.eq('notes',vehicle.notes);
+  }
+  const updated=checked(await query.select('notes_collection').maybeSingle());
+  if(!updated)throw Error('Notițele au fost modificate între timp sau mașina nu mai este disponibilă. Reîncarcă pagina înainte de a continua.');
+  vehicle.noteCollection=updated.notes_collection;
+  vehicle.notes=null;
+}
+
+function editVehicleNotes(index=null,deleting=false){
   const vehicle=C();
   if(!vehicle||busy)return;
+  const notes=vehicleNoteEntries(vehicle);
+  const note=notes[index];
+  if(index!==null&&!note)return;
+  const title=deleting?'Ștergi notița?':note?'Modifică notița':'Adaugă notiță';
   const dialog=document.querySelector('#documentDialog');
   dialog.removeAttribute('aria-describedby');
-  dialog.removeAttribute('aria-labelledby');
-  dialog.setAttribute('aria-label','Notițe pentru '+vehicle.name);
+  dialog.setAttribute('aria-labelledby','vehicleNoteTitle');
   dialog.innerHTML=`<form id="vehicleNotesForm">
-    <h3>${safe(vehicle.name)}</h3>
-    <div class="field">
-      <label for="vehicleNotesText">Notițe</label>
-      <textarea id="vehicleNotesText" name="notes" maxlength="6000" rows="7" placeholder="Ștergătoare: …&#10;Anvelope: …&#10;Ulei motor: …">${safe(vehicle.notes)}</textarea>
-    </div>
+    <h3 id="vehicleNoteTitle">${title}</h3>
+    ${deleting?`<p>${safe(note.title)}</p>`:`
+      <div class="field">
+        <label for="vehicleNoteName">Titlu</label>
+        <input id="vehicleNoteName" name="title" maxlength="100" value="${safe(note?.title)}" placeholder="Ex. Anvelope" required>
+      </div>
+      <div class="field">
+        <label for="vehicleNotesText">Conținut</label>
+        <textarea id="vehicleNotesText" name="notes" maxlength="6000" rows="5" required>${safe(note?.text)}</textarea>
+      </div>`}
     <p class="form-error" role="alert" hidden></p>
     <div class="form-actions">
-      <button type="button" class="secondary-button" data-cancel>Anulează</button>
-      <button type="submit" class="primary">Salvează</button>
+      <button type="button" class="secondary-button" data-cancel ${deleting?'autofocus':''}>Anulează</button>
+      <button type="submit" class="${deleting?'danger-button':'primary'}">${deleting?'Șterge notița':'Salvează'}</button>
     </div>
   </form>`;
   const form=dialog.querySelector('form');
   const error=form.querySelector('[role=alert]');
+  const showError=message=>{error.textContent=message;error.hidden=false};
   dialog.showModal();
   form.querySelector('[data-cancel]').onclick=()=>{if(!busy)dialog.close()};
   const blockCancel=event=>{if(busy)event.preventDefault()};
@@ -76,22 +110,22 @@ function editVehicleNotes(){
   dialog.addEventListener('close',()=>dialog.removeEventListener('cancel',blockCancel),{once:true});
   form.onsubmit=event=>{
     event.preventDefault();
-    const notes=String(new FormData(form).get('notes')).trim()||null;
-    if(notes===vehicle.notes){dialog.close();return}
+    const entries=[...notes];
+    if(deleting)entries.splice(index,1);
+    else{
+      const data=new FormData(form);
+      const entry={title:String(data.get('title')).trim(),text:String(data.get('notes')).trim()};
+      if(!entry.title||!entry.text){showError('Completează titlul și conținutul notiței.');return}
+      if(index===null)entries.push(entry);
+      else entries[index]=entry;
+    }
     error.hidden=true;
     action(async()=>{
-      const query=sb.from('vehicles').update({notes}).eq('id',vehicle.id).eq('user_id',user.id);
-      const unchanged=vehicle.notes===null?query.is('notes',null):query.eq('notes',vehicle.notes);
-      const updated=checked(await unchanged.select('notes').maybeSingle());
-      if(!updated)throw Error('Notițele au fost modificate între timp sau mașina nu mai este disponibilă.');
-      vehicle.notes=updated.notes;
+      await saveVehicleNotes(vehicle,entries);
       dialog.close();
       render();
-      document.querySelector('#editVehicleNotes')?.focus({preventScroll:true});
-    },form.querySelector('[type=submit]'),message=>{
-      error.textContent=message;
-      error.hidden=false;
-    });
+      document.querySelector('#addVehicleNote')?.focus({preventScroll:true});
+    },form.querySelector('[type=submit]'),showError);
   };
 }
 
@@ -204,7 +238,7 @@ async function requireMyCarAccess(){
  const error=Error('Accesul la MyCar nu este activ. Contactează administratorul pentru o invitație.');
  error.code='mycar_access_denied';report(error.message);throw error;
 }
-async function load(){await requireMyCarAccess();restoreNavigation();const viewUrl=new URL(location.href);if(viewUrl.searchParams.get('view')==='invitations'){page='Cereri de acces';viewUrl.searchParams.delete('view');window.history.replaceState(null,'',viewUrl.pathname+viewUrl.search+viewUrl.hash)}const results=await Promise.all([sb.from('vehicles').select('*').order('created_at'),sb.from('events').select('*').order('event_date',{ascending:false}),sb.from('documents').select('*'),sb.from('preferences').select('*').maybeSingle()]);const [vs,es,ds,pref]=results.map(checked);cars=vs.map(v=>({id:v.id,fuels:v.fuel_types||[],dashboardWidgets:MyCarWidgets.normalize(v.dashboard_widgets),name:v.display_name||[v.make,v.model].join(' '),spec:vehicleDescription(v),notes:v.notes??null,plate:identifier(v.registration_number),vin:identifier(v.vin),make:v.make,model:v.model,engine:vehicleDetails(v).engine,year:vehicleDetails(v).year||'',km:Math.max(Number(v.odometer_km||0),...es.filter(e=>e.vehicle_id===v.id).map(e=>Number(e.odometer_km||0))).toLocaleString('ro-RO')}));eventRecords=es;events=es.map(e=>[e.vehicle_id,e.event_date,e.category,e.title,e.description||'',Number(e.amount),e.odometer_km===null?'':Number(e.odometer_km).toLocaleString('ro-RO'),e.id,e.fuel_type,e.fuel_grade,e.quantity,e.full_tank]);documents=ds;if(editingCarId&&!cars.some(x=>x.id===editingCarId)){editingCarId=null;carDraft=newCarDraft||{};newCarDraft=null}if(!cars.some(c=>c.id===car))car=cars[0]?.id||null;if(pref){theme=pref.theme;days=String(pref.reminder_days);notices=pref.notifications_enabled}if(window.mycarNotificationsChanged)window.mycarNotificationsChanged();window.recordMyCarVisit?.()}
+async function load(){await requireMyCarAccess();restoreNavigation();const viewUrl=new URL(location.href);if(viewUrl.searchParams.get('view')==='invitations'){page='Cereri de acces';viewUrl.searchParams.delete('view');window.history.replaceState(null,'',viewUrl.pathname+viewUrl.search+viewUrl.hash)}const results=await Promise.all([sb.from('vehicles').select('*').order('created_at'),sb.from('events').select('*').order('event_date',{ascending:false}),sb.from('documents').select('*'),sb.from('preferences').select('*').maybeSingle()]);const [vs,es,ds,pref]=results.map(checked);cars=vs.map(v=>({id:v.id,fuels:v.fuel_types||[],dashboardWidgets:MyCarWidgets.normalize(v.dashboard_widgets),name:v.display_name||[v.make,v.model].join(' '),spec:vehicleDescription(v),notes:v.notes??null,noteCollection:v.notes_collection??null,plate:identifier(v.registration_number),vin:identifier(v.vin),make:v.make,model:v.model,engine:vehicleDetails(v).engine,year:vehicleDetails(v).year||'',km:Math.max(Number(v.odometer_km||0),...es.filter(e=>e.vehicle_id===v.id).map(e=>Number(e.odometer_km||0))).toLocaleString('ro-RO')}));eventRecords=es;events=es.map(e=>[e.vehicle_id,e.event_date,e.category,e.title,e.description||'',Number(e.amount),e.odometer_km===null?'':Number(e.odometer_km).toLocaleString('ro-RO'),e.id,e.fuel_type,e.fuel_grade,e.quantity,e.full_tank]);documents=ds;if(editingCarId&&!cars.some(x=>x.id===editingCarId)){editingCarId=null;carDraft=newCarDraft||{};newCarDraft=null}if(!cars.some(c=>c.id===car))car=cars[0]?.id||null;if(pref){theme=pref.theme;days=String(pref.reminder_days);notices=pref.notifications_enabled}if(window.mycarNotificationsChanged)window.mycarNotificationsChanged();window.recordMyCarVisit?.()}
 const parseKm=value=>{const raw=String(value||'').replace(/[. ,\s]/g,'');if(raw&&!/^\d+$/.test(raw))throw Error('Kilometrajul trebuie să conțină cifre.');const n=Number(raw||0);if(!Number.isSafeInteger(n)||n>2147483647)throw Error('Kilometraj invalid.');return n};
 function login(){editingCarId=null;newCarDraft=null;editingEventId=null;eventDraft=null;document.querySelector('#nav').innerHTML='';document.querySelector('#car').innerHTML='';document.querySelector('.context').hidden=true;document.querySelector('#account').innerHTML='';window.renderMyCarMenu?.();document.querySelector('#content').innerHTML=`<section class="card login"><h2>Intră în MyCar</h2><p class="muted">Folosește emailul și parola contului tău.<br>Pentru acces la testare, <button type="button" class="text-link" id="requestInvitation">solicită o invitație</button>.</p><form id="loginForm"><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required></div><div class="field"><label for="password">Parolă</label><input id="password" name="password" type="password" autocomplete="current-password" required></div><button class="primary" type="submit">Autentificare</button></form></section>`;document.querySelector('#loginForm').onsubmit=e=>{e.preventDefault();const d=new FormData(e.currentTarget);action(async()=>{const data=checked(await sb.auth.signInWithPassword({email:d.get('email'),password:d.get('password')}));user=data.user;await load();render()},e.currentTarget.querySelector('button'))};window.bindMyCarInvitations?.()}
 
@@ -224,7 +258,7 @@ if(width>0&&node.scrollWidth>width){const size=parseFloat(getComputedStyle(node)
 }
 }
 window.addEventListener('resize',fitVinText);
-function render(){if(!user){login();return}if(passwordSetup){setupPassword();return}rememberNavigation();document.documentElement.dataset.theme=theme;document.title=page+' · MyCar';document.querySelector('.context').hidden=cars.length<2;document.querySelector('#account').innerHTML='';window.renderMyCarMenu?.();document.querySelector('#nav').innerHTML=names.filter(n=>n!=='Setări').map((n,i)=>`<button type="button" class="${page===n?'active':''}" data-go="${n}" ${page===n?'aria-current="page"':''}>${icon(['home','car','plus','document','history'][i])}<span>${n}</span></button>`).join('');document.querySelector('#car').innerHTML=cars.map(x=>`<button type="button" data-car="${x.id}" aria-pressed="${x.id===car}" class="${x.id===car?'active':''}">${icon('car')}<span>${safe(x.name)}</span></button>`).join('');ensureSelectedCarVisible();document.querySelector('#content').innerHTML=({'Acasă':home,'Mașini':vehicles,'Adaugă':add,'Notițe':vehicleNotes,'Istoric':eventHistory,'Setări':settings,'Despre':about,'Cereri de acces':accessRequests})[page]();document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(page===b.dataset.go)return;page=b.dataset.go;render();window.scrollTo(0,0);document.querySelector('#nav [aria-current]')?.focus({preventScroll:true})});document.querySelectorAll('[data-vehicle-card]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-car],[data-delete-car],[data-edit-fuel],[data-edit-car]'))return;selectVehicle(b.dataset.vehicleCard)});document.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>selectVehicle(b.dataset.car));document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});document.querySelectorAll('[data-delete-car]').forEach(b=>b.onclick=()=>confirmDeletion('vehicles',b.dataset.deleteCar));document.querySelectorAll('[data-delete-event]').forEach(b=>b.onclick=()=>confirmDeletion('events',b.dataset.deleteEvent));document.querySelectorAll('[data-edit-event]').forEach(b=>b.onclick=()=>editEvent(b.dataset.editEvent));document.querySelectorAll('[data-edit-fuel]').forEach(b=>b.onclick=()=>editFuel(b.dataset.editFuel));document.querySelectorAll('[data-edit-car]').forEach(b=>b.onclick=()=>editVehicle(b.dataset.editCar));document.querySelector('#editVehicleNotes')?.addEventListener('click',editVehicleNotes);const cf=document.querySelector('#carForm');if(cf)bindVehicleForm(cf);
+function render(){if(!user){login();return}if(passwordSetup){setupPassword();return}rememberNavigation();document.documentElement.dataset.theme=theme;document.title=page+' · MyCar';document.querySelector('.context').hidden=cars.length<2;document.querySelector('#account').innerHTML='';window.renderMyCarMenu?.();document.querySelector('#nav').innerHTML=names.filter(n=>n!=='Setări').map((n,i)=>`<button type="button" class="${page===n?'active':''}" data-go="${n}" ${page===n?'aria-current="page"':''}>${icon(['home','car','plus','document','history'][i])}<span>${n}</span></button>`).join('');document.querySelector('#car').innerHTML=cars.map(x=>`<button type="button" data-car="${x.id}" aria-pressed="${x.id===car}" class="${x.id===car?'active':''}">${icon('car')}<span>${safe(x.name)}</span></button>`).join('');ensureSelectedCarVisible();document.querySelector('#content').innerHTML=({'Acasă':home,'Mașini':vehicles,'Adaugă':add,'Notițe':vehicleNotes,'Istoric':eventHistory,'Setări':settings,'Despre':about,'Cereri de acces':accessRequests})[page]();document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(page===b.dataset.go)return;page=b.dataset.go;render();window.scrollTo(0,0);document.querySelector('#nav [aria-current]')?.focus({preventScroll:true})});document.querySelectorAll('[data-vehicle-card]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-car],[data-delete-car],[data-edit-fuel],[data-edit-car]'))return;selectVehicle(b.dataset.vehicleCard)});document.querySelectorAll('[data-car]').forEach(b=>b.onclick=()=>selectVehicle(b.dataset.car));document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});document.querySelectorAll('[data-delete-car]').forEach(b=>b.onclick=()=>confirmDeletion('vehicles',b.dataset.deleteCar));document.querySelectorAll('[data-delete-event]').forEach(b=>b.onclick=()=>confirmDeletion('events',b.dataset.deleteEvent));document.querySelectorAll('[data-edit-event]').forEach(b=>b.onclick=()=>editEvent(b.dataset.editEvent));document.querySelectorAll('[data-edit-fuel]').forEach(b=>b.onclick=()=>editFuel(b.dataset.editFuel));document.querySelectorAll('[data-edit-car]').forEach(b=>b.onclick=()=>editVehicle(b.dataset.editCar));document.querySelector('#addVehicleNote')?.addEventListener('click',()=>editVehicleNotes());document.querySelectorAll('[data-edit-note]').forEach(b=>b.onclick=()=>editVehicleNotes(Number(b.dataset.editNote)));document.querySelectorAll('[data-delete-note]').forEach(b=>b.onclick=()=>editVehicleNotes(Number(b.dataset.deleteNote),true));const cf=document.querySelector('#carForm');if(cf)bindVehicleForm(cf);
 const f=document.querySelector('#eventForm');if(f)bindEventForm(f);document.querySelectorAll('[data-select-document]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-document]'))return;selectedDocumentKey=car+':'+b.dataset.selectDocument;render();const current=document.querySelector('[data-select-document="'+b.dataset.selectDocument+'"] .document-select');if(current)current.focus({preventScroll:true})});document.querySelectorAll('[data-document]').forEach(b=>b.onclick=()=>editDocument(b.dataset.document));if(page==='Setări'&&window.initMyCarPush)window.initMyCarPush();window.bindMyCarInvitations?.();window.MyCarUpdates?.bind();MyCarWidgets.bind();requestAnimationFrame(fitVinText);const n=document.querySelector('#notices');if(n)n.onchange=()=>action(()=>savePreferences({notices:n.checked}));document.querySelectorAll('button[data-days]').forEach(b=>b.onclick=()=>action(()=>savePreferences({days:b.dataset.days}),b));document.querySelectorAll('button[data-theme]').forEach(b=>b.onclick=()=>action(()=>savePreferences({theme:b.dataset.theme}),b));}
 
 async function saveVehicleDetails(payload,vehicleId=null){
