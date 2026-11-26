@@ -1,19 +1,34 @@
-# AGENTS.md — mycar
+# AGENTS.md — MyCar
 
-## Repository scope
-- Work directly in `anzosafe-oss/mycar` only. Do not search, list, or inspect other GitHub repositories or organization-wide resources.
-- Expand scope only when the user explicitly requests cross-app integration, or after explaining a necessary external dependency and obtaining approval.
-- Read this file first. Use known repository paths and targeted code searches; avoid repeated discovery.
+## Priorities and continuity
+- Read this file before intervening in the application.
+- Prioritize quality, stability and user experience over token savings.
+- Preserve visual and functional consistency across the MyApps ecosystem.
+- Preserve all existing functionality outside the requested scope and respect established design, interaction and versioning conventions.
+- Inspect the relevant files and dependencies thoroughly enough to implement and test safely. Avoid redundant investigation, unrelated refactoring and unnecessary rewrites; efficiency must not compromise quality.
 
-## Token efficiency
-- Inspect only relevant files, functions, and direct dependencies. Read targeted line ranges where possible.
-- Avoid full audits, full-file rewrites, unrelated refactoring, repeated checks, and unnecessary previews or documentation.
-- Use the smallest safe patch. Preserve existing UI, behavior, and versioning conventions.
-- For Supabase, access only the associated project and app-specific resources relevant to the task. Do not enumerate unrelated apps or expose secrets. Verify unknown resource identifiers before use.
+## Repository and dependency scope
+- Start in `anzosafe-oss/mycar`, using known paths and targeted searches.
+- Consult other repositories or Supabase projects when necessary for the requested implementation or its direct dependencies. Do not impose a blanket restriction or an additional approval requirement merely for necessary read-only investigation.
+- When the user references another MyApps application, inspect its actual implementation and reuse the validated solution, adapting it to MyCar without introducing inconsistent behavior.
+- Keep investigation relevant; avoid unrelated organization-wide discovery or audits.
+- Verify unknown resource identifiers before use. Never expose secrets or weaken authentication, authorization or user-data isolation.
 
-## Maintenance and safety
-- Check references before deleting obsolete assets or code, including dynamic references, manifests, service workers, caches and deployment configuration. Never delete uncertain resources or rewrite Git history.
-- Keep cleanup targeted; do not perform unsolicited repository-wide cleanup.
-- Run tests proportionate to risk, including relevant regressions. Report untested behavior and blockers.
-- Prepare application changes on a separate branch; production publication requires explicit user approval.
-- Report changed files, test results, limitations and decisions concisely.
+## Data integrity
+- Demonstration data is permitted only in previews and test environments.
+- The first LIVE publication must be clean, without demonstration records, seed data, mock backends or test accounts introduced by the implementation.
+- Subsequent updates must preserve all real user data, ownership, access controls and existing relationships.
+- Use isolated test fixtures and reversible validation. Never delete or reset real data as part of cleanup or deployment.
+
+## Maintenance
+- Remove obsolete files only after checking their dependencies and references, including dynamic paths, manifests, service workers, caches and deployment configuration.
+- Do not delete uncertain resources, rewrite Git history or perform unsolicited repository-wide cleanup.
+- Prefer focused, maintainable changes; remove superseded rules instead of layering contradictory instructions over them.
+
+## Validation and publication
+- Prepare application changes on a separate branch.
+- Verify compatibility with iOS, Android and desktop, including affected responsive layouts and interactions. Use relevant regression and functional tests proportionate to risk.
+- Report any behavior that could not be tested on actual devices; do not describe simulated checks as physical-device testing.
+- Update the application version when publishing application changes, keeping version labels, asset references and update-detection metadata consistent. Documentation-only changes do not require an application version bump.
+- Publish to production only with the user's explicit approval. Preparing a branch, tests or a preview does not authorize production publication.
+- Report changed files, validation results, limitations and material decisions concisely.
